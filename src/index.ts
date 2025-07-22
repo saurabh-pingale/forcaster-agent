@@ -1,9 +1,9 @@
 import express from "express"
 import type { Request, Response } from "express";
 
-import { fetchCastsFromNeynar } from "./services/neynar";
+import { commentOnCast, fetchCastsFromNeynar, likeCast } from "./services/neynar";
 import { ActionType, getGeminiResponse } from "./services/gemini";
-import { PORT } from "./config";
+import { NEYNAR, PORT } from "./config";
 import { sleep } from "./utils/utils";
 
 const app = express();
@@ -16,18 +16,27 @@ interface ActionResult {
 }
 
 export async function main(userQuery?: string): Promise<ActionResult[]> {
-    const casts = await fetchCastsFromNeynar(5);
+    const casts = await fetchCastsFromNeynar(1);
     console.log("Casts:", casts);
 
     const results: ActionResult[] = [];
 
     for (const cast of casts) {
         const { hash, text, timestamp } = cast;
-        const response = await getGeminiResponse(text, userQuery!);
+        const { action, comment } = await getGeminiResponse(text, userQuery!);
+
+        if (action === "like" || action === "like and comment") {
+            await likeCast(hash, NEYNAR.SIGNER_UUID);
+        }
+
+        if (action === "comment" || action === "like and comment") {
+            const replyText = comment || "Great cast!";
+            await commentOnCast(hash, NEYNAR.SIGNER_UUID, replyText);
+        }
 
         results.push({
             castId: hash,
-            action: response,
+            action,
             timestamp
         });
 
