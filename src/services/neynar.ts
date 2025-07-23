@@ -27,12 +27,21 @@ export async function fetchCastsFromNeynar(limit: number = 20) {
         return [];
 }
 
+export async function createCast(text: string, signerUuid: string) {
+    const response = await axios.post(`${NEYNAR_BASE_URL}/farcaster/cast`, {
+        signer_uuid: signerUuid,
+        text: text
+    }, {
+        headers: { 'x-api-key': NEYNAR.API_KEY }
+    });
+    return response.data;
+}
+
 export async function likeCast(castHash: string, signerUuid: string) {
-    console.log("Executing like----->");
-    const response = await axios.post(`${NEYNAR_BASE_URL}/farcaster/cast/like`, {
+    const response = await axios.post(`${NEYNAR_BASE_URL}/farcaster/reaction`, {
         signer_uuid: signerUuid,
         reaction_type: "like",
-        cast_hash: castHash
+        target: castHash
     }, {
         headers: { 'x-api-key': NEYNAR.API_KEY }
     });
@@ -40,7 +49,6 @@ export async function likeCast(castHash: string, signerUuid: string) {
 }
 
 export async function commentOnCast(castHash: string, signerUuid: string, text: string) {
-    console.log("Executing comment----->");
     const response = await axios.post(`${NEYNAR_BASE_URL}/farcaster/cast`, {
         signer_uuid: signerUuid,
         text: text,

@@ -70,8 +70,5 @@ export async function getGeminiResponse(castInfo: string, userQuery: string): Pr
       console.error("Failed to extract from Gemini response:", raw);
     }
 
-    console.log("Action:", action);
-    console.log("Comment:", comment);
-
   return { action, comment };
 }

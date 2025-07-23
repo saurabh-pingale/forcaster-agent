@@ -1,7 +1,7 @@
 import express from "express"
 import type { Request, Response } from "express";
 
-import { commentOnCast, fetchCastsFromNeynar, likeCast } from "./services/neynar";
+import { commentOnCast, createCast, fetchCastsFromNeynar, likeCast } from "./services/neynar";
 import { ActionType, getGeminiResponse } from "./services/gemini";
 import { NEYNAR, PORT } from "./config";
 import { sleep } from "./utils/utils";
@@ -17,7 +17,6 @@ interface ActionResult {
 
 export async function main(userQuery?: string): Promise<ActionResult[]> {
     const casts = await fetchCastsFromNeynar(1);
-    console.log("Casts:", casts);
 
     const results: ActionResult[] = [];
 
@@ -65,6 +64,22 @@ app.get("/", async (req: Request, res: Response) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 })
+
+app.post("/create-cast", async (req: Request, res: Response) => {
+    const { text } = req.body;
+
+    if (!text) {
+        return res.status(400).json({ error: "Missing 'text' in request body" });
+    }
+
+    try {
+        const result = await createCast(text, NEYNAR.SIGNER_UUID);
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        console.error("Create cast error:", error);
+        res.status(500).json({ error: "Failed to create cast" });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
