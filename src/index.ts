@@ -5,6 +5,7 @@ import { commentOnCast, createCast, fetchCastsFromNeynar, likeCast } from "./ser
 import { ActionType, getGeminiResponse } from "./services/gemini";
 import { NEYNAR, PORT } from "./config";
 import { sleep } from "./utils/utils";
+import { getTrendingCastFromGemini } from "./services/getTrendingCastFromGemini";
 
 const app = express();
 const port = PORT || 8080;
@@ -78,6 +79,30 @@ app.post("/create-cast", async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Create cast error:", error);
         res.status(500).json({ error: "Failed to create cast" });
+    }
+});
+
+app.post("/generate-trending-cast", async (req: Request, res: Response) => {
+    try {
+        const casts = await fetchCastsFromNeynar(20);
+
+        const castSummaries = casts.map((cast: { text: string }, index: number) =>
+          `Cast ${index + 1}: ${cast.text.trim()}`
+        ).join("\n");
+
+        const trendingText = await getTrendingCastFromGemini(castSummaries);
+        console.log("Trending Text:", trendingText);
+
+        if (!trendingText) {
+            return res.status(500).json({ error: "Failed to generate trending cast." });
+        }
+
+        const response = await createCast(trendingText, NEYNAR.SIGNER_UUID);
+
+        res.status(200).json({ success: true, data: response });
+    } catch (error) {
+        console.error("Trending cast error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 });
 
